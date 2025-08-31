@@ -1,14 +1,9 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
 
-const NEWS_API_KEY = "9ec3cd1c0603415fa22623a3313343bf";
-const NEWS_API_URL =
-  `https://newsapi.org/v2/everything?` +
-  `q=cybersecurity OR "cyber security" OR hacking OR "data breach" OR "information security"&` +
-  `language=en&sortBy=publishedAt&apiKey=${NEWS_API_KEY}`;
-
-const BACKEND_PROXY_URL = "https://newsd.onrender.com/api/vulnerabilities";
-
+// Use environment variables with REACT_APP_ prefix for frontend
+const BACKEND_PROXY_URL = process.env.REACT_APP_BACKEND_PROXY_URL || "http://localhost:4000/api/vulnerabilities";
+const BACKEND_NEWS_URL = process.env.REACT_APP_BACKEND_NEWS_URL || "http://localhost:4000/api/news";
 
 const colors = {
   background: "#121212",
@@ -57,7 +52,7 @@ function News() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(NEWS_API_URL);
+        const response = await fetch(BACKEND_NEWS_URL);
         if (!response.ok) throw new Error("Failed to fetch news");
         const data = await response.json();
         setNewsList(data.articles || []);
@@ -123,8 +118,8 @@ function Vulnerabilities() {
   const [packageName, setPackageName] = React.useState("jinja2");
   const [version, setVersion] = React.useState("2.4.1");
   const [ecosystem, setEcosystem] = React.useState("PyPI");
-  const [company] = React.useState("");
-  const [severityFilter] = React.useState("");
+  const [company, setCompany] = React.useState("");
+  const [severityFilter, setSeverityFilter] = React.useState("");
 
   const [vulnerabilities, setVulnerabilities] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
@@ -226,9 +221,9 @@ function Vulnerabilities() {
 
   const notesStyle = {
     flex: "0 0 300px",
-    maxWidth: "300px",
-    minWidth: "240px",
-    marginTop: "200px",
+    maxWidth: 300,
+    minWidth: 240,
+    marginTop: 200,
     top: 24,
     marginLeft: "auto",
     backgroundColor: colors.surface,
@@ -257,91 +252,91 @@ function Vulnerabilities() {
       <main
         style={{
           flex: "1 1 500px",
-          maxWidth: "700px",
-          minWidth: "320px",
+          maxWidth: 700,
+          minWidth: 320,
         }}
       >
         <div
-  className="center"
-  style={{
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    height: "100%",    // or a fixed height like "200px" or "300px" depending on context
-    minHeight: 200,    // ensures it has some height to center within
-    width: "200%",
-  }}
->
-  <h2 style={{ fontSize: 28, marginBottom: 20, color: colors.primary }}>
-    Vulnerabilities for {packageName} version {version} ({ecosystem})
-  </h2>
+          className="center"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100%",
+            minHeight: 200,
+            width: "200%",
+          }}
+        >
+          <h2 style={{ fontSize: 28, marginBottom: 20, color: colors.primary }}>
+            Vulnerabilities for {packageName} version {version} ({ecosystem})
+          </h2>
 
-  <div style={{ display: "flex", justifyContent: "center", marginBottom: 30, width: "100%" }}>
-    <form
-      onSubmit={(e) => e.preventDefault()}
-      style={{
-        display: "flex",
-        gap: 10,
-        flexWrap: "wrap",
-        maxWidth: 900,
-        width: "100%",
-        justifyContent: "center",
-      }}
-    >
-      {/* inputs - fix max widths */}
-      <input
-        type="text"
-        value={packageName}
-        onChange={(e) => setPackageName(e.target.value)}
-        placeholder="Package Name"
-        required
-        style={{ flexBasis: 180, padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
-      />
-      <input
-        type="text"
-        value={version}
-        onChange={(e) => setVersion(e.target.value)}
-        placeholder="Version"
-        required
-        style={{ flexBasis: 120, padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
-      />
-      <input
-        type="text"
-        value={ecosystem}
-        onChange={(e) => setEcosystem(e.target.value)}
-        placeholder="Ecosystem"
-        required
-        style={{ flexBasis: 140, padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
-      />
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 30, width: "100%" }}>
+            <form
+              onSubmit={(e) => e.preventDefault()}
+              style={{
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+                maxWidth: 900,
+                width: "100%",
+                justifyContent: "center",
+              }}
+            >
+              <input
+                type="text"
+                value={packageName}
+                onChange={(e) => setPackageName(e.target.value)}
+                placeholder="Package Name"
+                required
+                style={{ flexBasis: 180, padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
+              />
+              <input
+                type="text"
+                value={version}
+                onChange={(e) => setVersion(e.target.value)}
+                placeholder="Version"
+                required
+                style={{ flexBasis: 120, padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
+              />
+              <input
+                type="text"
+                value={ecosystem}
+                onChange={(e) => setEcosystem(e.target.value)}
+                placeholder="Ecosystem"
+                required
+                style={{ flexBasis: 140, padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
+              />
 
-      <button
-        type="submit"
-        style={{
-          flexBasis: 120,
-          backgroundColor: colors.primary,
-          color: colors.textPrimary,
-          border: "none",
-          borderRadius: 4,
-          cursor: "pointer",
-          fontWeight: "bold",
-          fontSize: 16,
-          transition: "background-color 0.2s ease",
-          userSelect: "none",
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.primaryDark)}
-        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colors.primary)}
-      >
-        Search
-      </button>
-    </form>
-  </div>
-</div>
-
+              <button
+                type="submit"
+                style={{
+                  flexBasis: 120,
+                  backgroundColor: colors.primary,
+                  color: colors.textPrimary,
+                  border: "none",
+                  borderRadius: 4,
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                  fontSize: 16,
+                  transition: "background-color 0.2s ease",
+                  userSelect: "none",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.primaryDark)}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colors.primary)}
+              >
+                Search
+              </button>
+            </form>
+          </div>
+        </div>
 
         {loading && <p style={{ color: colors.textSecondary }}>Loading vulnerabilities...</p>}
         {error && <p style={{ color: colors.error }}>{error}</p>}
-        {!loading && vulnerabilities.length === 0 && <p style={{ color: colors.textSecondary }}>No vulnerabilities found.</p>}
+        {!loading && vulnerabilities.length === 0 && (
+          <p style={{ color: colors.textSecondary }}>No vulnerabilities found.</p>
+        )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {vulnerabilities.map((vuln) => {
@@ -424,7 +419,13 @@ function Vulnerabilities() {
 
 function Navigation() {
   const location = useLocation();
-  const linkStyle = { marginRight: 30, textDecoration: "none", fontWeight: "700", fontSize: 18, color: colors.textPrimary };
+  const linkStyle = {
+    marginRight: 30,
+    textDecoration: "none",
+    fontWeight: "700",
+    fontSize: 18,
+    color: colors.textPrimary,
+  };
   const activeStyle = {
     color: colors.primary,
     borderBottom: `3px solid ${colors.primary}`,
@@ -457,18 +458,18 @@ export default function App() {
   return (
     <Router>
       <div
-  style={{
-    maxWidth: 1440,       // Increased maxWidth
-    margin: "0 auto",
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-    color: colors.textPrimary,
-    backgroundColor: colors.background,
-    minHeight: "100vh",
-    paddingBottom: "40px",
-    paddingLeft: 24,      // Increased padding left/right for breathing room
-    paddingRight: 24,
-  }}
->
+        style={{
+          maxWidth: 1440,
+          margin: "0 auto",
+          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+          color: colors.textPrimary,
+          backgroundColor: colors.background,
+          minHeight: "100vh",
+          paddingBottom: 40,
+          paddingLeft: 24,
+          paddingRight: 24,
+        }}
+      >
         <h1
           style={{
             textAlign: "center",

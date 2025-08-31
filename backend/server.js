@@ -1,41 +1,74 @@
 const express = require("express");
 const cors = require("cors");
+require("dotenv").config();
 
-const app = express();
-const PORT = 4000;
-
-// CORS configuration - allow specific frontend origins (adjust for production)
-const allowedOrigins = ["https://luxury-pie-0bb637.netlify.app/news", "https://luxury-pie-0bb637.netlify.app/vulnerabilities"];
-
-app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like Postman, curl)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  }
-}));
-
-// Middleware to parse JSON bodies
-app.use(express.json());
-
-// Fetch polyfill for Node.js >= 18 is built-in, otherwise:
-// const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+// Using node-fetch for compatibility if needed
 const fetch = global.fetch || require("node-fetch");
 
-// Helper: filter by severity in vulnerability severity array
+const app = express();
+const PORT = process.env.PORT || 4000;
+
+// CORS configuration - allow frontend origins
+const allowedOrigins = [
+  "https://luxury-pie-0bb637.netlify.app",
+  "http://localhost:4000",
+  "http://localhost:3000",
+  "http://localhost:3001",
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // Allow non-browser tools
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = `CORS policy does not allow access from ${origin}`;
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
+  })
+);
+
+app.use(express.json());
+
+// NewsAPI proxy endpoint
+app.get("/api/news", async (req, res) => {
+  try {
+    const newsApiKey = process.env.NEWS_API_KEY;
+    if (!newsApiKey) {
+      return res.status(500).json({ error: "News API key is not configured" });
+    }
+
+    const response = await fetch(
+      `https://newsapi.org/v2/everything?q=cybersecurity OR "cyber security" OR hacking OR "data breach" OR "information security"&language=en&sortBy=publishedAt&apiKey=${newsApiKey}`
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("NewsAPI error:", errorText);
+      return res.status(response.status).json({ error: "Failed to fetch news data" });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error("Error querying NewsAPI:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+});
+
+// Helper to filter severity
 function matchesSeverity(vulnSeverities, severityFilter) {
   if (!severityFilter) return true;
   if (!Array.isArray(vulnSeverities)) return false;
-  return vulnSeverities.some(s =>
-    (s.type && s.type.toUpperCase() === severityFilter.toUpperCase())
-    || (typeof s === "string" && s.toUpperCase() === severityFilter.toUpperCase())
+  return vulnSeverities.some(
+    (s) =>
+      (s.type && s.type.toUpperCase() === severityFilter.toUpperCase()) ||
+      (typeof s === "string" && s.toUpperCase() === severityFilter.toUpperCase())
   );
 }
 
+// Vulnerabilities API endpoint
 app.post("/api/vulnerabilities", async (req, res) => {
   try {
     const { packageName, version, ecosystem, company, severityFilter } = req.body || {};
@@ -61,7 +94,7 @@ app.post("/api/vulnerabilities", async (req, res) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("OSV API error:", errorText);
-      return res.status(response.status).json({ error: "Failed to fetch OSV data." });
+      return res.status(response.status).json({ error: "Failed to fetch OSV data" });
     }
 
     const data = await response.json();
@@ -70,14 +103,14 @@ app.post("/api/vulnerabilities", async (req, res) => {
     // Filter by company keyword in references URLs
     if (company) {
       const companyLower = company.toLowerCase();
-      vulns = vulns.filter(v =>
-        v.references && v.references.some(ref => ref.url.toLowerCase().includes(companyLower))
+      vulns = vulns.filter(
+        (v) => v.references && v.references.some((ref) => ref.url.toLowerCase().includes(companyLower))
       );
     }
 
     // Filter by severity
     if (severityFilter) {
-      vulns = vulns.filter(v => matchesSeverity(v.severity, severityFilter));
+      vulns = vulns.filter((v) => matchesSeverity(v.severity, severityFilter));
     }
 
     res.json({ vulns });
