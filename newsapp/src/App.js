@@ -1,5 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
+import GoogleAd from "./GoogleAd";
+
 
 // Use environment variables with REACT_APP_ prefix for frontend
 const BACKEND_PROXY_URL = process.env.REACT_APP_BACKEND_PROXY_URL || "https://newsd.onrender.com/api/vulnerabilities";
@@ -329,6 +331,7 @@ function Vulnerabilities() {
                 Search
               </button>
             </form>
+            <GoogleAd />
           </div>
         </div>
 
@@ -413,6 +416,11 @@ function Vulnerabilities() {
         <p><strong>References:</strong> External, trusted links providing more information or patches.</p>
         <p>This dashboard helps you assess software risk and decide on updates or patches.</p>
       </aside>
+      <GoogleAd />
+      <GoogleAd />
+      <GoogleAd />
+      <GoogleAd />
+      <GoogleAd />
     </div>
   );
 }
