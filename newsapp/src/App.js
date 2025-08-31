@@ -52,9 +52,6 @@ function News() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
 
-  const getRandomCybersecurityImage = () =>
-    `https://source.unsplash.com/random/600x460/?cybersecurity,technology,computer,security,hacking,dark`;
-
   React.useEffect(() => {
     async function fetchNews() {
       setLoading(true);
@@ -126,8 +123,8 @@ function Vulnerabilities() {
   const [packageName, setPackageName] = React.useState("jinja2");
   const [version, setVersion] = React.useState("2.4.1");
   const [ecosystem, setEcosystem] = React.useState("PyPI");
-  const [company, setCompany] = React.useState("");
-  const [severityFilter, setSeverityFilter] = React.useState("");
+  const [company] = React.useState("");
+  const [severityFilter] = React.useState("");
 
   const [vulnerabilities, setVulnerabilities] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
@@ -243,17 +240,6 @@ function Vulnerabilities() {
     height: "fit-content",
     boxSizing: "border-box",
   };
-
-  const inputStyle = {
-    backgroundColor: colors.surface,
-    color: colors.textPrimary,
-    border: `1px solid ${colors.border}`,
-    borderRadius: 4,
-    padding: 8,
-    fontSize: 16,
-  };
-
-  const selectStyle = { ...inputStyle, appearance: "none", cursor: "pointer" };
 
   return (
     <div
