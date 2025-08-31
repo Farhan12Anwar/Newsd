@@ -2,8 +2,8 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
 
 // Use environment variables with REACT_APP_ prefix for frontend
-const BACKEND_PROXY_URL = process.env.REACT_APP_BACKEND_PROXY_URL || "http://localhost:4000/api/vulnerabilities";
-const BACKEND_NEWS_URL = process.env.REACT_APP_BACKEND_NEWS_URL || "http://localhost:4000/api/news";
+const BACKEND_PROXY_URL = process.env.REACT_APP_BACKEND_PROXY_URL || "https://newsd.onrender.com/api/vulnerabilities";
+const BACKEND_NEWS_URL = process.env.REACT_APP_BACKEND_NEWS_URL || "https://newsd.onrender.com/api/news";
 
 const colors = {
   background: "#121212",
