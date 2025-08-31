@@ -7,9 +7,8 @@ const NEWS_API_URL =
   `q=cybersecurity OR "cyber security" OR hacking OR "data breach" OR "information security"&` +
   `language=en&sortBy=publishedAt&apiKey=${NEWS_API_KEY}`;
 
-const BACKEND_PROXY_URL = "http://localhost:4000/api/vulnerabilities"; // Change to your deployed backend URL
+const BACKEND_PROXY_URL = "http://localhost:4000/api/vulnerabilities"; // Adjust as needed
 
-// Dark theme colors
 const colors = {
   background: "#121212",
   surface: "#1E1E1E",
@@ -22,23 +21,21 @@ const colors = {
 };
 
 const cardStyle = {
-  borderRadius: "12px",
+  borderRadius: 12,
   boxShadow: "0 4px 10px rgba(0,0,0,0.7)",
   backgroundColor: colors.surface,
-  transition: "transform 0.2s ease, box-shadow 0.2s ease",
-  cursor: "pointer",
-  padding: "20px",
-  marginBottom: "30px",
+  padding: 20,
+  marginBottom: 30,
   color: colors.textPrimary,
   textDecoration: "none",
   boxSizing: "border-box",
-  width: "150%",
+  minWidth: 760,
+  maxWidth: 800,
 };
 
+// News filtering for true cybersecurity content
 function isCybersecurityArticle(article) {
-  const fields = [article.title, article.description, article.content]
-    .join(" ")
-    .toLowerCase();
+  const fields = [article.title, article.description, article.content].join(" ").toLowerCase();
   return (
     fields.includes("cyber") ||
     fields.includes("security") ||
@@ -55,7 +52,7 @@ function News() {
   const [error, setError] = React.useState(null);
 
   const getRandomCybersecurityImage = () =>
-    `https://source.unsplash.com/random/600x460/?cybersecurity`;
+    `https://source.unsplash.com/random/600x460/?cybersecurity,technology,computer,security,hacking,dark`;
 
   React.useEffect(() => {
     async function fetchNews() {
@@ -76,17 +73,18 @@ function News() {
   }, []);
 
   return (
-    <div style={{ padding: "20px", backgroundColor: colors.background, minHeight: "80vh" }}>
+    <div style={{ padding: 20, backgroundColor: colors.background, minHeight: "80vh" }}>
       <h2 style={{ fontSize: 32, fontWeight: 700, marginBottom: 30, color: colors.primary }}>
         Latest Cybersecurity News
       </h2>
+
       {loading && <p style={{ fontSize: 18, color: colors.textSecondary }}>Loading news...</p>}
       {error && <p style={{ color: colors.error, fontSize: 18 }}>{error}</p>}
-      {!loading && newsList.length === 0 && (
-        <p style={{ fontSize: 18, color: colors.textSecondary }}>No news articles found.</p>
+      {!loading && newsList.filter(isCybersecurityArticle).length === 0 && (
+        <p style={{ fontSize: 18, color: colors.textSecondary }}>No cybersecurity news found.</p>
       )}
 
-      {newsList.map((news, i) => (
+      {newsList.filter(isCybersecurityArticle).map((news, i) => (
         <div
           key={i}
           style={{
@@ -99,15 +97,17 @@ function News() {
           }}
         >
           <img
-            src={news.urlToImage || getRandomCybersecurityImage()}
+            src={news.urlToImage || "/cyber-placeholder.jpg"}
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = "/cyber-placeholder.jpg";
+            }}
             alt="news"
-            style={{ width: "100%", maxWidth: 300, height: 160, objectFit: "cover", borderRadius: 6, filter: 'brightness(0.9)' }}
+            style={{ width: "100%", maxWidth: 300, height: 160, objectFit: "cover", borderRadius: 6, filter: "brightness(0.9)" }}
             loading="lazy"
           />
           <div style={{ flex: "1 1 300px", color: colors.textPrimary }}>
-            <h3 style={{ fontSize: 24, marginBottom: 12, lineHeight: 1.2 }}>
-              {news.title}
-            </h3>
+            <h3 style={{ fontSize: 24, marginBottom: 12, lineHeight: 1.2 }}>{news.title}</h3>
             <p style={{ fontSize: 16, marginBottom: 12, color: colors.textSecondary }}>
               {news.description || news.content}
             </p>
@@ -493,7 +493,7 @@ export default function App() {
             letterSpacing: 1.1,
           }}
         >
-          Cybersecurity Dashboard
+          Spider Dashboard
         </h1>
         <Navigation />
         <Routes>
