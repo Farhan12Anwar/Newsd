@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 4000;
 
 // CORS configuration - allow frontend origins
 const allowedOrigins = [
-  "https://luxury-pie-0bb637.netlify.app",
+  'https://spidernews.netlify.app',,
   "http://localhost:4000",
   "http://localhost:3000",
   "http://localhost:3001",
