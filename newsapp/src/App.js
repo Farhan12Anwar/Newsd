@@ -7,33 +7,55 @@ const NEWS_API_URL =
   `q=cybersecurity OR "cyber security" OR hacking OR "data breach" OR "information security"&` +
   `language=en&sortBy=publishedAt&apiKey=${NEWS_API_KEY}`;
 
-const BACKEND_PROXY_URL = "http://localhost:4000/api/vulnerabilities"; // Update for deployed backend URL in production
+const BACKEND_PROXY_URL = "http://localhost:4000/api/vulnerabilities"; // Change to your deployed backend URL
+
+// Dark theme colors
+const colors = {
+  background: "#121212",
+  surface: "#1E1E1E",
+  primary: "#90caf9",
+  primaryDark: "#64b5f6",
+  textPrimary: "#FFFFFF",
+  textSecondary: "#B0BEC5",
+  error: "#cf6679",
+  border: "#333",
+};
 
 const cardStyle = {
   borderRadius: "12px",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-  backgroundColor: "#fff",
+  boxShadow: "0 4px 10px rgba(0,0,0,0.7)",
+  backgroundColor: colors.surface,
   transition: "transform 0.2s ease, box-shadow 0.2s ease",
   cursor: "pointer",
   padding: "20px",
   marginBottom: "30px",
-  color: "#222",
+  color: colors.textPrimary,
   textDecoration: "none",
+  boxSizing: "border-box",
+  width: "150%",
 };
 
-const cardHoverStyle = {
-  transform: "translateY(-5px)",
-  boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
-};
+function isCybersecurityArticle(article) {
+  const fields = [article.title, article.description, article.content]
+    .join(" ")
+    .toLowerCase();
+  return (
+    fields.includes("cyber") ||
+    fields.includes("security") ||
+    fields.includes("hacking") ||
+    fields.includes("breach") ||
+    fields.includes("vulnera") ||
+    fields.includes("infosec")
+  );
+}
 
 function News() {
   const [newsList, setNewsList] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
 
-  const getRandomCybersecurityImage = () => {
-    return `https://source.unsplash.com/random/600x460/?cybersecurity,technology,computer,security,hacking`;
-  };
+  const getRandomCybersecurityImage = () =>
+    `https://source.unsplash.com/random/600x460/?cybersecurity`;
 
   React.useEffect(() => {
     async function fetchNews() {
@@ -54,39 +76,42 @@ function News() {
   }, []);
 
   return (
-    <div style={{ padding: "30px 40px", backgroundColor: "#f9f9f9" }}>
-      <h2 style={{ fontSize: "36px", fontWeight: "700", marginBottom: "40px", color: "#0056b3" }}>
+    <div style={{ padding: "20px", backgroundColor: colors.background, minHeight: "80vh" }}>
+      <h2 style={{ fontSize: 32, fontWeight: 700, marginBottom: 30, color: colors.primary }}>
         Latest Cybersecurity News
       </h2>
-      {loading && <p style={{ fontSize: "20px" }}>Loading news...</p>}
-      {error && <p style={{ color: "red", fontSize: "20px" }}>{error}</p>}
-      {!loading && newsList.length === 0 && <p style={{ fontSize: "20px" }}>No news articles found.</p>}
+      {loading && <p style={{ fontSize: 18, color: colors.textSecondary }}>Loading news...</p>}
+      {error && <p style={{ color: colors.error, fontSize: 18 }}>{error}</p>}
+      {!loading && newsList.length === 0 && (
+        <p style={{ fontSize: 18, color: colors.textSecondary }}>No news articles found.</p>
+      )}
 
       {newsList.map((news, i) => (
         <div
           key={i}
           style={{
-            marginBottom: "20px",
-            borderBottom: "1px solid #ddd",
-            paddingBottom: "15px",
+            marginBottom: 20,
+            borderBottom: `1px solid ${colors.border}`,
+            paddingBottom: 15,
             display: "flex",
-            gap: "15px",
+            gap: 15,
+            flexWrap: "wrap",
           }}
         >
           <img
             src={news.urlToImage || getRandomCybersecurityImage()}
             alt="news"
-            style={{ width: 150, height: 100, objectFit: "cover", borderRadius: "6px" }}
+            style={{ width: "100%", maxWidth: 300, height: 160, objectFit: "cover", borderRadius: 6, filter: 'brightness(0.9)' }}
             loading="lazy"
           />
-          <div style={{ flexGrow: 1 }}>
-            <h3 style={{ fontSize: "28px", marginBottom: "15px", color: "#004080", lineHeight: 1.2 }}>
+          <div style={{ flex: "1 1 300px", color: colors.textPrimary }}>
+            <h3 style={{ fontSize: 24, marginBottom: 12, lineHeight: 1.2 }}>
               {news.title}
             </h3>
-            <p style={{ fontSize: "18px", color: "#222", marginBottom: "15px" }}>
+            <p style={{ fontSize: 16, marginBottom: 12, color: colors.textSecondary }}>
               {news.description || news.content}
             </p>
-            <p style={{ fontSize: "16px", color: "#666", fontStyle: "italic" }}>
+            <p style={{ fontSize: 14, color: colors.textSecondary, fontStyle: "italic" }}>
               {news.source?.name} | {new Date(news.publishedAt).toLocaleString()}
             </p>
           </div>
@@ -100,12 +125,12 @@ function Vulnerabilities() {
   const [packageName, setPackageName] = React.useState("jinja2");
   const [version, setVersion] = React.useState("2.4.1");
   const [ecosystem, setEcosystem] = React.useState("PyPI");
+  const [company, setCompany] = React.useState("");
+  const [severityFilter, setSeverityFilter] = React.useState("");
 
   const [vulnerabilities, setVulnerabilities] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
-
-  const placeholderVulnImage = "https://via.placeholder.com/400x200?text=No+Image";
 
   React.useEffect(() => {
     async function fetchVulnerabilities() {
@@ -114,10 +139,8 @@ function Vulnerabilities() {
       try {
         const response = await fetch(BACKEND_PROXY_URL, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ packageName, version, ecosystem }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ packageName, version, ecosystem, company, severityFilter }),
         });
         if (!response.ok) throw new Error("Failed to fetch vulnerabilities");
         const data = await response.json();
@@ -129,76 +152,296 @@ function Vulnerabilities() {
       }
     }
     fetchVulnerabilities();
-  }, [packageName, version, ecosystem]);
+  }, [packageName, version, ecosystem, company, severityFilter]);
+
+  // Truncate utility for text overflow
+  const truncateText = (text, maxLength = 100) => {
+    if (!text) return "";
+    return text.length > maxLength ? text.slice(0, maxLength) + "…" : text;
+  };
+
+  // Parse CVSS v3 vector string into beginner-friendly descriptions
+  function parseCvssSeverity(severityArr) {
+    if (!Array.isArray(severityArr)) return "Severity data not available";
+    const cvssV3 = severityArr.find((s) => s.type === "CVSS_V3" || s.type === "CVSS_V3.1");
+    if (!cvssV3) return "Severity data not available";
+
+    const parts = cvssV3.score.split("/");
+    const baseScorePart = parts.find((p) => p.startsWith("CVSS:")) || "";
+    const metrics = parts
+      .slice(1)
+      .map((p) => {
+        const [k, v] = p.split(":");
+        switch (k) {
+          case "AV":
+            return `Attack Vector: ${vectorMap(v)}`;
+          case "AC":
+            return `Attack Complexity: ${complexityMap(v)}`;
+          case "PR":
+            return `Privileges Required: ${privilegesMap(v)}`;
+          case "UI":
+            return `User Interaction: ${userInteractionMap(v)}`;
+          case "S":
+            return `Scope: ${scopeMap(v)}`;
+          case "C":
+            return `Confidentiality Impact: ${impactMap(v)}`;
+          case "I":
+            return `Integrity Impact: ${impactMap(v)}`;
+          case "A":
+            return `Availability Impact: ${impactMap(v)}`;
+          default:
+            return p;
+        }
+      })
+      .join("\n");
+    return [baseScorePart, metrics].join("\n");
+  }
+
+  const vectorMap = (v) => ({
+    N: "Network",
+    A: "Adjacent Network",
+    L: "Local",
+    P: "Physical",
+  }[v] || v);
+  const complexityMap = (v) => ({
+    L: "Low",
+    H: "High",
+  }[v] || v);
+  const privilegesMap = (v) => ({
+    N: "None",
+    L: "Low",
+    H: "High",
+  }[v] || v);
+  const userInteractionMap = (v) => ({
+    N: "None",
+    R: "Required",
+  }[v] || v);
+  const scopeMap = (v) => ({
+    U: "Unchanged",
+    C: "Changed",
+  }[v] || v);
+  const impactMap = (v) => ({
+    N: "None",
+    L: "Low",
+    H: "High",
+  }[v] || v);
+
+  const notesStyle = {
+    flex: "0 0 300px",
+    maxWidth: "300px",
+    minWidth: "240px",
+    marginTop: "200px",
+    top: 24,
+    marginLeft: "auto",
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    padding: 20,
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 1.5,
+    height: "fit-content",
+    boxSizing: "border-box",
+  };
+
+  const inputStyle = {
+    backgroundColor: colors.surface,
+    color: colors.textPrimary,
+    border: `1px solid ${colors.border}`,
+    borderRadius: 4,
+    padding: 8,
+    fontSize: 16,
+  };
+
+  const selectStyle = { ...inputStyle, appearance: "none", cursor: "pointer" };
 
   return (
-    <div style={{ padding: "30px 40px", backgroundColor: "#f9f9f9" }}>
-      <h2 style={{ fontSize: "36px", fontWeight: "700", marginBottom: "40px", color: "#0056b3" }}>
-        Vulnerabilities for {packageName} version {version} ({ecosystem})
-      </h2>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 40,
+        padding: "20px 10px",
+        flexWrap: "wrap",
+        justifyContent: "flex-start",
+        backgroundColor: colors.background,
+        minHeight: "80vh",
+      }}
+    >
+      <main
+        style={{
+          flex: "1 1 500px",
+          maxWidth: "700px",
+          minWidth: "320px",
+        }}
+      >
+        <div
+  className="center"
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100%",    // or a fixed height like "200px" or "300px" depending on context
+    minHeight: 200,    // ensures it has some height to center within
+    width: "200%",
+  }}
+>
+  <h2 style={{ fontSize: 28, marginBottom: 20, color: colors.primary }}>
+    Vulnerabilities for {packageName} version {version} ({ecosystem})
+  </h2>
 
-      {/* Optional: input fields to change package/version/ecosystem */}
-      {/* You can add controlled form inputs here if you want user interaction */}
+  <div style={{ display: "flex", justifyContent: "center", marginBottom: 30, width: "100%" }}>
+    <form
+      onSubmit={(e) => e.preventDefault()}
+      style={{
+        display: "flex",
+        gap: 10,
+        flexWrap: "wrap",
+        maxWidth: 900,
+        width: "100%",
+        justifyContent: "center",
+      }}
+    >
+      {/* inputs - fix max widths */}
+      <input
+        type="text"
+        value={packageName}
+        onChange={(e) => setPackageName(e.target.value)}
+        placeholder="Package Name"
+        required
+        style={{ flexBasis: 180, padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
+      />
+      <input
+        type="text"
+        value={version}
+        onChange={(e) => setVersion(e.target.value)}
+        placeholder="Version"
+        required
+        style={{ flexBasis: 120, padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
+      />
+      <input
+        type="text"
+        value={ecosystem}
+        onChange={(e) => setEcosystem(e.target.value)}
+        placeholder="Ecosystem"
+        required
+        style={{ flexBasis: 140, padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
+      />
 
-      {loading && <p style={{ fontSize: "20px" }}>Loading vulnerabilities...</p>}
-      {error && <p style={{ color: "red", fontSize: "20px" }}>{error}</p>}
-      {!loading && vulnerabilities.length === 0 && <p style={{ fontSize: "20px" }}>No vulnerabilities found.</p>}
+      <button
+        type="submit"
+        style={{
+          flexBasis: 120,
+          backgroundColor: colors.primary,
+          color: colors.textPrimary,
+          border: "none",
+          borderRadius: 4,
+          cursor: "pointer",
+          fontWeight: "bold",
+          fontSize: 16,
+          transition: "background-color 0.2s ease",
+          userSelect: "none",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colors.primaryDark)}
+        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colors.primary)}
+      >
+        Search
+      </button>
+    </form>
+  </div>
+</div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "30px", justifyContent: "center" }}>
-        {vulnerabilities.map((vuln) => (
-          <div
-            key={vuln.id}
-            style={{
-              ...cardStyle,
-              width: "400px",
-              display: "flex",
-              flexDirection: "column",
-              backgroundColor: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            <img
-              src={placeholderVulnImage}
-              alt="vulnerability"
-              style={{
-                width: "100%",
-                height: "200px",
-                objectFit: "cover",
-                borderRadius: "12px",
-                marginBottom: "15px",
-                boxShadow: "0 3px 12px rgba(0,0,0,0.15)",
-              }}
-              loading="lazy"
-              draggable={false}
-            />
-            <h3 style={{ fontSize: "24px", marginBottom: "12px", color: "#004080" }}>
-              <a
-                href={`https://osv.dev/vulnerability/${vuln.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ textDecoration: "none", color: "#007acc" }}
+
+        {loading && <p style={{ color: colors.textSecondary }}>Loading vulnerabilities...</p>}
+        {error && <p style={{ color: colors.error }}>{error}</p>}
+        {!loading && vulnerabilities.length === 0 && <p style={{ color: colors.textSecondary }}>No vulnerabilities found.</p>}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {vulnerabilities.map((vuln) => {
+            const cvssSummary = parseCvssSeverity(vuln.severity);
+
+            return (
+              <article
+                key={vuln.id}
+                style={{
+                  ...cardStyle,
+                  backgroundColor: colors.surface,
+                  color: colors.textPrimary,
+                }}
               >
-                {vuln.id}
-              </a>
-            </h3>
-            <p style={{ fontSize: "18px", color: "#333", marginBottom: "20px", lineHeight: "1.4" }}>
-              {vuln.summary || "No description available"}
-            </p>
-            {/* OSV API doesn't provide CVSS by default, so this section can be omitted or extended with additional data sources */}
-          </div>
-        ))}
-      </div>
+                <h3 style={{ margin: 0, marginBottom: 10, color: colors.primary }}>
+                  <a
+                    href={`https://osv.dev/vulnerability/${vuln.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ textDecoration: "none", color: colors.primary }}
+                  >
+                    {vuln.id}
+                  </a>
+                </h3>
+                <p style={{ fontSize: 16, marginBottom: 8 }}>
+                  <strong>Description:</strong> {truncateText(vuln.summary || "No summary available.")}
+                </p>
+                <p
+                  style={{
+                    whiteSpace: "pre-line",
+                    fontSize: 14,
+                    color: colors.textSecondary,
+                    marginBottom: 8,
+                    fontStyle: "italic",
+                  }}
+                >
+                  <strong>Impact Details:</strong>
+                  {"\n" + (cvssSummary || "Not available")}
+                </p>
+                {vuln.published && (
+                  <p style={{ fontSize: 16, marginBottom: 8 }}>
+                    <strong>Published Date:</strong> {new Date(vuln.published).toLocaleDateString()}
+                  </p>
+                )}
+                {vuln.references && vuln.references.length > 0 && (
+                  <div style={{ fontSize: 16 }}>
+                    <strong>References:</strong>
+                    <ul style={{ margin: "8px 0 0 20px", wordBreak: "break-word" }}>
+                      {vuln.references.map((ref, i) => {
+                        const displayedUrl = ref.url.length > 60 ? ref.url.slice(0, 157) + "…" : ref.url;
+                        return (
+                          <li key={i}>
+                            <a href={ref.url} target="_blank" rel="noopener noreferrer" title={ref.url} style={{ color: colors.primary }}>
+                              {displayedUrl}
+                            </a>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      </main>
+
+      <aside style={notesStyle}>
+        <h3 style={{ color: colors.primary, marginTop: 0, marginBottom: 12 }}>How to Read Vulnerabilities</h3>
+        <p><strong>Vulnerability ID:</strong> Unique ID for this vulnerability (e.g., GHSA-462w-v97r-4m45).</p>
+        <p><strong>Description:</strong> A summary explaining what this vulnerability is and how it affects software.</p>
+        <p><strong>Impact Details:</strong> Detailed info about attack vector, complexity, privileges, user interaction, scope, and impact on confidentiality, integrity, and availability.</p>
+        <p><strong>Published Date:</strong> When this vulnerability was officially disclosed.</p>
+        <p><strong>References:</strong> External, trusted links providing more information or patches.</p>
+        <p>This dashboard helps you assess software risk and decide on updates or patches.</p>
+      </aside>
     </div>
   );
 }
 
 function Navigation() {
   const location = useLocation();
-  const linkStyle = { marginRight: 30, textDecoration: "none", fontWeight: "700", fontSize: "18px" };
+  const linkStyle = { marginRight: 30, textDecoration: "none", fontWeight: "700", fontSize: 18, color: colors.textPrimary };
   const activeStyle = {
-    color: "#007acc",
-    borderBottom: "3px solid #007acc",
-    paddingBottom: "4px",
+    color: colors.primary,
+    borderBottom: `3px solid ${colors.primary}`,
+    paddingBottom: 4,
     transition: "all 0.3s ease",
   };
 
@@ -206,11 +449,11 @@ function Navigation() {
     <nav
       style={{
         padding: "20px 40px",
-        borderBottom: "2px solid #ccc",
-        marginBottom: "40px",
-        backgroundColor: "#f0f8ff",
-        fontWeight: "600",
-        fontSize: "20px",
+        borderBottom: `2px solid ${colors.border}`,
+        marginBottom: 40,
+        backgroundColor: colors.surface,
+        fontWeight: 600,
+        fontSize: 20,
       }}
     >
       <Link to="/news" style={{ ...linkStyle, ...(location.pathname === "/news" ? activeStyle : {}) }}>
@@ -227,23 +470,27 @@ export default function App() {
   return (
     <Router>
       <div
-        style={{
-          maxWidth: 1024,
-          margin: "0 auto",
-          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-          color: "#222",
-          paddingBottom: "40px",
-        }}
-      >
+  style={{
+    maxWidth: 1440,       // Increased maxWidth
+    margin: "0 auto",
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+    color: colors.textPrimary,
+    backgroundColor: colors.background,
+    minHeight: "100vh",
+    paddingBottom: "40px",
+    paddingLeft: 24,      // Increased padding left/right for breathing room
+    paddingRight: 24,
+  }}
+>
         <h1
           style={{
             textAlign: "center",
-            paddingTop: "30px",
-            paddingBottom: "20px",
-            color: "#0056b3",
-            fontWeight: "900",
-            fontSize: "44px",
-            letterSpacing: "1.1px",
+            paddingTop: 30,
+            paddingBottom: 20,
+            color: colors.primary,
+            fontWeight: 900,
+            fontSize: 44,
+            letterSpacing: 1.1,
           }}
         >
           Cybersecurity Dashboard
