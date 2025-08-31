@@ -5,7 +5,7 @@ const app = express();
 const PORT = 4000;
 
 // CORS configuration - allow specific frontend origins (adjust for production)
-const allowedOrigins = ["http://localhost:3000", "http://localhost:3001"];
+const allowedOrigins = ["https://luxury-pie-0bb637.netlify.app/news", "https://luxury-pie-0bb637.netlify.app/vulnerabilities"];
 
 app.use(cors({
   origin: function(origin, callback) {
