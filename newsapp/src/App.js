@@ -7,7 +7,8 @@ const NEWS_API_URL =
   `q=cybersecurity OR "cyber security" OR hacking OR "data breach" OR "information security"&` +
   `language=en&sortBy=publishedAt&apiKey=${NEWS_API_KEY}`;
 
-const BACKEND_PROXY_URL = "http://localhost:4000/api/vulnerabilities"; // Adjust as needed
+const BACKEND_PROXY_URL = "https://newsd.onrender.com/api/vulnerabilities";
+
 
 const colors = {
   background: "#121212",
