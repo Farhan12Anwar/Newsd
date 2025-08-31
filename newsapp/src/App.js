@@ -7,27 +7,7 @@ const NEWS_API_URL =
   `q=cybersecurity OR "cyber security" OR hacking OR "data breach" OR "information security"&` +
   `language=en&sortBy=publishedAt&apiKey=${NEWS_API_KEY}`;
 
-const BACKEND_PROXY_URL = "http://localhost:4000/api/vulnerabilities"; // Your backend proxy for vulnerabilities
-
-function extractCvssInfo(metrics) {
-  if (!metrics) return {};
-  const cvssV3 = metrics["cvssV3"];
-  const cvssV2 = metrics["cvssV2"];
-  if (cvssV3) {
-    return {
-      score: cvssV3.baseScore,
-      severity: cvssV3.baseSeverity,
-      attackVector: cvssV3.attackVector,
-    };
-  } else if (cvssV2) {
-    return {
-      score: cvssV2.baseScore,
-      severity: cvssV2.severity,
-      attackVector: cvssV2.accessVector,
-    };
-  }
-  return {};
-}
+const BACKEND_PROXY_URL = "http://localhost:4000/api/vulnerabilities"; // Update for deployed backend URL in production
 
 const cardStyle = {
   borderRadius: "12px",
@@ -51,7 +31,6 @@ function News() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
 
-  // Function to get random cybersecurity-related image from Unsplash
   const getRandomCybersecurityImage = () => {
     return `https://source.unsplash.com/random/600x460/?cybersecurity,technology,computer,security,hacking`;
   };
@@ -74,8 +53,7 @@ function News() {
     fetchNews();
   }, []);
 
-  
-return (
+  return (
     <div style={{ padding: "30px 40px", backgroundColor: "#f9f9f9" }}>
       <h2 style={{ fontSize: "36px", fontWeight: "700", marginBottom: "40px", color: "#0056b3" }}>
         Latest Cybersecurity News
@@ -119,10 +97,13 @@ return (
 }
 
 function Vulnerabilities() {
+  const [packageName, setPackageName] = React.useState("jinja2");
+  const [version, setVersion] = React.useState("2.4.1");
+  const [ecosystem, setEcosystem] = React.useState("PyPI");
+
   const [vulnerabilities, setVulnerabilities] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
-  const [hoverIndex, setHoverIndex] = React.useState(null);
 
   const placeholderVulnImage = "https://via.placeholder.com/400x200?text=No+Image";
 
@@ -131,10 +112,16 @@ function Vulnerabilities() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(BACKEND_PROXY_URL);
+        const response = await fetch(BACKEND_PROXY_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ packageName, version, ecosystem }),
+        });
         if (!response.ok) throw new Error("Failed to fetch vulnerabilities");
         const data = await response.json();
-        setVulnerabilities(data.result?.CVE_Items || []);
+        setVulnerabilities(data.vulns || []);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -142,92 +129,64 @@ function Vulnerabilities() {
       }
     }
     fetchVulnerabilities();
-  }, []);
+  }, [packageName, version, ecosystem]);
 
   return (
     <div style={{ padding: "30px 40px", backgroundColor: "#f9f9f9" }}>
       <h2 style={{ fontSize: "36px", fontWeight: "700", marginBottom: "40px", color: "#0056b3" }}>
-        Recent Vulnerabilities
+        Vulnerabilities for {packageName} version {version} ({ecosystem})
       </h2>
+
+      {/* Optional: input fields to change package/version/ecosystem */}
+      {/* You can add controlled form inputs here if you want user interaction */}
+
       {loading && <p style={{ fontSize: "20px" }}>Loading vulnerabilities...</p>}
       {error && <p style={{ color: "red", fontSize: "20px" }}>{error}</p>}
       {!loading && vulnerabilities.length === 0 && <p style={{ fontSize: "20px" }}>No vulnerabilities found.</p>}
 
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "30px",
-          justifyContent: "center",
-        }}
-      >
-        {vulnerabilities.map((item, i) => {
-          const isHovered = i === hoverIndex;
-          const cve = item.cve;
-          const cveId = cve.CVE_data_meta.ID;
-          let description = cve.description.description_data[0]?.value || "No description available";
-          if (description.length > 180) {
-            description = description.slice(0, 177) + "...";
-          }
-          const { score, severity, attackVector } = extractCvssInfo(item.impact?.baseMetricV3 || item.impact?.baseMetricV2);
-
-          return (
-            <div
-              key={cveId}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "30px", justifyContent: "center" }}>
+        {vulnerabilities.map((vuln) => (
+          <div
+            key={vuln.id}
+            style={{
+              ...cardStyle,
+              width: "400px",
+              display: "flex",
+              flexDirection: "column",
+              backgroundColor: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            <img
+              src={placeholderVulnImage}
+              alt="vulnerability"
               style={{
-                ...cardStyle,
-                ...(isHovered ? cardHoverStyle : {}),
-                width: "400px",
-                display: "flex",
-                flexDirection: "column",
-                backgroundColor: "#fff",
-                cursor: "pointer",
+                width: "100%",
+                height: "200px",
+                objectFit: "cover",
+                borderRadius: "12px",
+                marginBottom: "15px",
+                boxShadow: "0 3px 12px rgba(0,0,0,0.15)",
               }}
-              onMouseEnter={() => setHoverIndex(i)}
-              onMouseLeave={() => setHoverIndex(null)}
-            >
-              <img
-                src={placeholderVulnImage}
-                alt="vulnerability"
-                style={{
-                  width: "100%",
-                  height: "200px",
-                  objectFit: "cover",
-                  borderRadius: "12px",
-                  marginBottom: "15px",
-                  boxShadow: "0 3px 12px rgba(0,0,0,0.15)",
-                }}
-                loading="lazy"
-                draggable={false}
-              />
-              <h3 style={{ fontSize: "24px", marginBottom: "12px", color: "#004080" }}>
-                <a
-                  href={`https://nvd.nist.gov/vuln/detail/${cveId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ textDecoration: "none", color: "#007acc" }}
-                >
-                  {cveId}
-                </a>
-              </h3>
-              <p style={{ fontSize: "18px", color: "#333", flexGrow: 1, marginBottom: "20px", lineHeight: "1.4" }}>
-                {description}
-              </p>
-
-              <div style={{ fontSize: "16px", color: "#555" }}>
-                <p>
-                  <strong>CVSS Score:</strong> {score ?? "N/A"}
-                </p>
-                <p>
-                  <strong>Severity:</strong> {severity ?? "N/A"}
-                </p>
-                <p>
-                  <strong>Attack Vector:</strong> {attackVector ?? "N/A"}
-                </p>
-              </div>
-            </div>
-          );
-        })}
+              loading="lazy"
+              draggable={false}
+            />
+            <h3 style={{ fontSize: "24px", marginBottom: "12px", color: "#004080" }}>
+              <a
+                href={`https://osv.dev/vulnerability/${vuln.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ textDecoration: "none", color: "#007acc" }}
+              >
+                {vuln.id}
+              </a>
+            </h3>
+            <p style={{ fontSize: "18px", color: "#333", marginBottom: "20px", lineHeight: "1.4" }}>
+              {vuln.summary || "No description available"}
+            </p>
+            {/* OSV API doesn't provide CVSS by default, so this section can be omitted or extended with additional data sources */}
+          </div>
+        ))}
       </div>
     </div>
   );

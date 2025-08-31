@@ -1,44 +1,52 @@
 const express = require("express");
 const cors = require("cors");
+const bodyParser = require("body-parser");
 const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
 const app = express();
 const PORT = 4000;
 
-const NVD_API_KEY = "8dee2c37-4e5a-405e-89ab-95414d33cb71";
+app.use(cors());
+app.use(bodyParser.json()); // To parse JSON body from frontend
 
-console.log("Starting backend proxy server...");
+console.log("Starting backend proxy server with OSV.dev...");
 
-app.use(cors()); // Enable CORS for all origins (adjust in production)
-
-const NVD_API_URL =
-  "https://services.nvd.nist.gov/rest/json/cves/1.0?resultsPerPage=10&startIndex=0&pubStartDate=2025-01-01T00:00:00Z";
-
-app.get("/api/vulnerabilities", async (req, res) => {
+// POST API endpoint to query OSV.dev for vulnerabilities by package version
+app.post("/api/vulnerabilities", async (req, res) => {
   try {
-    const response = await fetch(NVD_API_URL, {
-  headers: {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
-    "Accept": "application/json",
-    "apiKey": NVD_API_KEY,
-    "Accept-Language": "en-US,en;q=0.9",
-    "Connection": "keep-alive",
-    "Cache-Control": "no-cache"
-  }
-});
+    const { packageName, version, ecosystem } = req.body;
+
+    // Validate inputs
+    if (!packageName || !version || !ecosystem) {
+      return res.status(400).json({ error: "packageName, version and ecosystem are required in JSON body." });
+    }
+
+    const osvRequestBody = {
+      version,
+      package: {
+        name: packageName,
+        ecosystem,
+      },
+    };
+
+    const response = await fetch("https://api.osv.dev/v1/query", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(osvRequestBody),
+    });
 
     if (!response.ok) {
-      console.error("NVD response status:", response.status, response.statusText);
-      console.error("Response headers:", response.headers.raw());
-      const errorBody = await response.text();
-      console.error("Response body:", errorBody);
-      return res.status(response.status).json({ error: `Failed to fetch NVD data: ${response.statusText}` });
+      const errorText = await response.text();
+      console.error("OSV API error:", errorText);
+      return res.status(response.status).json({ error: "Failed to fetch OSV data." });
     }
 
     const data = await response.json();
     res.json(data);
   } catch (error) {
-    console.error("Error fetching NVD data:", error);
+    console.error("Error querying OSV API:", error);
     res.status(500).json({ error: error.message || "Internal server error" });
   }
 });
