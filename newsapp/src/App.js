@@ -1,9 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
-import GoogleAd from "./GoogleAd";
 
-
-// Use environment variables with REACT_APP_ prefix for frontend
 const BACKEND_PROXY_URL = process.env.REACT_APP_BACKEND_PROXY_URL || "https://newsd.onrender.com/api/vulnerabilities";
 const BACKEND_NEWS_URL = process.env.REACT_APP_BACKEND_NEWS_URL || "https://newsd.onrender.com/api/news";
 
@@ -27,11 +24,34 @@ const cardStyle = {
   color: colors.textPrimary,
   textDecoration: "none",
   boxSizing: "border-box",
-  minWidth: 760,
-  maxWidth: 800,
+  minWidth: 320,
+  maxWidth: "100%",
 };
 
-// News filtering for true cybersecurity content
+// GoogleAd component with explicit styles and script push
+function GoogleAd() {
+  useEffect(() => {
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (e) {
+      // Ignore errors like blocked ads
+    }
+  }, []);
+
+  return (
+    <div style={{ width: "100%", maxWidth: 300, margin: "20px auto" }}>
+      <ins
+        className="adsbygoogle"
+        style={{ display: "block", width: "100%", height: 250 }}
+        data-ad-client="ca-pub-3970618664002225"
+        data-ad-slot="1624247201"
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      ></ins>
+    </div>
+  );
+}
+
 function isCybersecurityArticle(article) {
   const fields = [article.title, article.description, article.content].join(" ").toLowerCase();
   return (
@@ -45,11 +65,11 @@ function isCybersecurityArticle(article) {
 }
 
 function News() {
-  const [newsList, setNewsList] = React.useState([]);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState(null);
+  const [newsList, setNewsList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     async function fetchNews() {
       setLoading(true);
       setError(null);
@@ -87,8 +107,8 @@ function News() {
             borderBottom: `1px solid ${colors.border}`,
             paddingBottom: 15,
             display: "flex",
-            gap: 15,
             flexWrap: "wrap",
+            gap: 15,
           }}
         >
           <img
@@ -112,22 +132,25 @@ function News() {
           </div>
         </div>
       ))}
+
+      {/* Ad placement */}
+      <GoogleAd />
     </div>
   );
 }
 
 function Vulnerabilities() {
-  const [packageName, setPackageName] = React.useState("jinja2");
-  const [version, setVersion] = React.useState("2.4.1");
-  const [ecosystem, setEcosystem] = React.useState("PyPI");
-  const [company, setCompany] = React.useState("");
-  const [severityFilter, setSeverityFilter] = React.useState("");
+  const [packageName, setPackageName] = useState("jinja2");
+  const [version, setVersion] = useState("2.4.1");
+  const [ecosystem, setEcosystem] = useState("PyPI");
+  const [company] = useState("");
+  const [severityFilter] = useState("");
 
-  const [vulnerabilities, setVulnerabilities] = React.useState([]);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState(null);
+  const [vulnerabilities, setVulnerabilities] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     async function fetchVulnerabilities() {
       setLoading(true);
       setError(null);
@@ -149,13 +172,11 @@ function Vulnerabilities() {
     fetchVulnerabilities();
   }, [packageName, version, ecosystem, company, severityFilter]);
 
-  // Truncate utility for text overflow
   const truncateText = (text, maxLength = 100) => {
     if (!text) return "";
     return text.length > maxLength ? text.slice(0, maxLength) + "…" : text;
   };
 
-  // Parse CVSS v3 vector string into beginner-friendly descriptions
   function parseCvssSeverity(severityArr) {
     if (!Array.isArray(severityArr)) return "Severity data not available";
     const cvssV3 = severityArr.find((s) => s.type === "CVSS_V3" || s.type === "CVSS_V3.1");
@@ -168,24 +189,15 @@ function Vulnerabilities() {
       .map((p) => {
         const [k, v] = p.split(":");
         switch (k) {
-          case "AV":
-            return `Attack Vector: ${vectorMap(v)}`;
-          case "AC":
-            return `Attack Complexity: ${complexityMap(v)}`;
-          case "PR":
-            return `Privileges Required: ${privilegesMap(v)}`;
-          case "UI":
-            return `User Interaction: ${userInteractionMap(v)}`;
-          case "S":
-            return `Scope: ${scopeMap(v)}`;
-          case "C":
-            return `Confidentiality Impact: ${impactMap(v)}`;
-          case "I":
-            return `Integrity Impact: ${impactMap(v)}`;
-          case "A":
-            return `Availability Impact: ${impactMap(v)}`;
-          default:
-            return p;
+          case "AV": return `Attack Vector: ${vectorMap(v)}`;
+          case "AC": return `Attack Complexity: ${complexityMap(v)}`;
+          case "PR": return `Privileges Required: ${privilegesMap(v)}`;
+          case "UI": return `User Interaction: ${userInteractionMap(v)}`;
+          case "S": return `Scope: ${scopeMap(v)}`;
+          case "C": return `Confidentiality Impact: ${impactMap(v)}`;
+          case "I": return `Integrity Impact: ${impactMap(v)}`;
+          case "A": return `Availability Impact: ${impactMap(v)}`;
+          default: return p;
         }
       })
       .join("\n");
@@ -221,43 +233,44 @@ function Vulnerabilities() {
     H: "High",
   }[v] || v);
 
-  const notesStyle = {
-    flex: "0 0 300px",
-    maxWidth: 300,
+  // Responsive flex container for vulnerability page layout
+  const containerStyle = {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 40,
+    padding: "20px 10px",
+    justifyContent: "space-between",
+    backgroundColor: colors.background,
+    minHeight: "80vh",
+  };
+
+  // Main content styles with flexible width
+  const mainContentStyle = {
+    flex: "1 1 500px",
+    maxWidth: "calc(100% - 360px)", // leaves space for aside on larger screens
+    minWidth: 320,
+  };
+
+  // Aside styles shifted to right side with ads below instructions
+  const asideStyle = {
+    flex: "0 0 320px",
+    maxWidth: 320,
     minWidth: 240,
-    marginTop: 200,
-    top: 24,
-    marginLeft: "auto",
     backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 20,
-    fontSize: 14,
     color: colors.textSecondary,
+    fontSize: 14,
     lineHeight: 1.5,
-    height: "fit-content",
     boxSizing: "border-box",
+    display: "flex",
+    flexDirection: "column",
+    gap: 20,
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 40,
-        padding: "20px 10px",
-        flexWrap: "wrap",
-        justifyContent: "flex-start",
-        backgroundColor: colors.background,
-        minHeight: "80vh",
-      }}
-    >
-      <main
-        style={{
-          flex: "1 1 500px",
-          maxWidth: 700,
-          minWidth: 320,
-        }}
-      >
+    <div style={containerStyle}>
+      <main style={mainContentStyle}>
         <div
           className="center"
           style={{
@@ -265,26 +278,18 @@ function Vulnerabilities() {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            height: "100%",
             minHeight: 200,
-            width: "200%",
+            width: "100%",
           }}
         >
           <h2 style={{ fontSize: 28, marginBottom: 20, color: colors.primary }}>
             Vulnerabilities for {packageName} version {version} ({ecosystem})
           </h2>
 
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 30, width: "100%" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 30, width: "100%", flexWrap: "wrap", gap: 10 }}>
             <form
               onSubmit={(e) => e.preventDefault()}
-              style={{
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-                maxWidth: 900,
-                width: "100%",
-                justifyContent: "center",
-              }}
+              style={{ display: "flex", gap: 10, flexWrap: "wrap", maxWidth: 900, width: "100%", justifyContent: "center" }}
             >
               <input
                 type="text"
@@ -331,29 +336,23 @@ function Vulnerabilities() {
                 Search
               </button>
             </form>
-            <GoogleAd />
           </div>
+
+          {/* Ad below search form */}
+          <GoogleAd />
+
         </div>
 
         {loading && <p style={{ color: colors.textSecondary }}>Loading vulnerabilities...</p>}
         {error && <p style={{ color: colors.error }}>{error}</p>}
-        {!loading && vulnerabilities.length === 0 && (
-          <p style={{ color: colors.textSecondary }}>No vulnerabilities found.</p>
-        )}
+        {!loading && vulnerabilities.length === 0 && <p style={{ color: colors.textSecondary }}>No vulnerabilities found.</p>}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {vulnerabilities.map((vuln) => {
             const cvssSummary = parseCvssSeverity(vuln.severity);
 
             return (
-              <article
-                key={vuln.id}
-                style={{
-                  ...cardStyle,
-                  backgroundColor: colors.surface,
-                  color: colors.textPrimary,
-                }}
-              >
+              <article key={vuln.id} style={{ ...cardStyle, backgroundColor: colors.surface, color: colors.textPrimary }}>
                 <h3 style={{ margin: 0, marginBottom: 10, color: colors.primary }}>
                   <a
                     href={`https://osv.dev/vulnerability/${vuln.id}`}
@@ -407,20 +406,23 @@ function Vulnerabilities() {
         </div>
       </main>
 
-      <aside style={notesStyle}>
-        <h3 style={{ color: colors.primary, marginTop: 0, marginBottom: 12 }}>How to Read Vulnerabilities</h3>
-        <p><strong>Vulnerability ID:</strong> Unique ID for this vulnerability (e.g., GHSA-462w-v97r-4m45).</p>
-        <p><strong>Description:</strong> A summary explaining what this vulnerability is and how it affects software.</p>
-        <p><strong>Impact Details:</strong> Detailed info about attack vector, complexity, privileges, user interaction, scope, and impact on confidentiality, integrity, and availability.</p>
-        <p><strong>Published Date:</strong> When this vulnerability was officially disclosed.</p>
-        <p><strong>References:</strong> External, trusted links providing more information or patches.</p>
-        <p>This dashboard helps you assess software risk and decide on updates or patches.</p>
+      {/* Right side aside with instructions and vertically stacked ads */}
+      <aside style={asideStyle}>
+        <div>
+          <h3 style={{ color: colors.primary, marginTop: 0, marginBottom: 12 }}>How to Read Vulnerabilities</h3>
+          <p><strong>Vulnerability ID:</strong> Unique ID for this vulnerability (e.g., GHSA-462w-v97r-4m45).</p>
+          <p><strong>Description:</strong> A summary explaining what this vulnerability is and how it affects software.</p>
+          <p><strong>Impact Details:</strong> Detailed info about attack vector, complexity, privileges, user interaction, scope, and impact on confidentiality, integrity, and availability.</p>
+          <p><strong>Published Date:</strong> When this vulnerability was officially disclosed.</p>
+          <p><strong>References:</strong> External, trusted links providing more information or patches.</p>
+          <p>This dashboard helps you assess software risk and decide on updates or patches.</p>
+        </div>
+
+        {/* Ads stacked below instructions */}
+        <GoogleAd />
+        <GoogleAd />
+        <GoogleAd />
       </aside>
-      <GoogleAd />
-      <GoogleAd />
-      <GoogleAd />
-      <GoogleAd />
-      <GoogleAd />
     </div>
   );
 }
